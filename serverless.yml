@@ -1,0 +1,64 @@
+service: api-dynamic-page-test
+
+frameworkVersion: '^2.41.0'
+
+# configファイルの読み込み
+custom: ${file(./conf/${self:provider.stage}/config.yml)}
+
+provider:
+  name: aws
+  runtime: python3.8
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'ap-northeast-1'}
+  stackName: ${self:provider.stage}-api-dynamic-page-test
+  deploymentBucket:
+    name: kyb-iot-serverless-dev
+  stackTags:
+    Application: api-test
+    Owner: yuu999
+    ManagedBy: serverless
+  timeout: 30
+  memorySize: 128
+  environment:
+    TZ: Tokyo/Asia
+  logRetentionInDays: 30
+  lambdaHashingVersion: 20201221
+  apiGateway:
+    resourcePolicy:                   # API Gatewayのポリシー定義
+      - Effect: Allow
+        Principal: '*'
+        Action: execute-api:Invoke
+        Resource:
+          - execute-api:/*/*/*
+        Condition:
+          IpAddress:
+            aws:SourceIp: ${self:custom.AllowedIp}
+
+package:
+  individually: true
+  patterns:
+    - '!./**/**'
+    - '!./**'
+
+# -----------------------------
+# --- Lambda Functions --------
+# -----------------------------
+functions:
+  # APIs
+  SampleApi:
+    name: ${self:provider.stage}-sample-api
+    description: Sample API (Your IP)
+    handler: sample.lambda_handler
+    package:
+      patterns:
+        - ./template/*
+        - ./sample.py
+    layers:
+      - ${self:custom.LambdaLayerArn.Jinja2}
+    events:
+      - http:
+          method: get
+          path: test
+      - http:
+          method: any
+          path: test_any

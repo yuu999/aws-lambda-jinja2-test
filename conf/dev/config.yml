@@ -1,0 +1,5 @@
+LambdaLayerArn:
+  Jinja2: arn:aws:lambda:ap-northeast-1:<account_id>:layer:jinja2:2
+
+AllowedIp:
+  - '0.0.0.0/0' # List the IPs you want to allow to connect
